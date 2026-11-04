@@ -1,5 +1,9 @@
 # Changes
 
+## 1.0.1: Releases straight from GitHub
+
+- New versions now go to npm straight from GitHub, with a signature you can check on npm. Nothing changes in the app.
+
 ## 1.0.0: First release
 
 - DMARC and TLS reports by email, explained in plain English.
