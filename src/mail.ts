@@ -3,6 +3,8 @@
 // zipped or gzipped), TLS reports are JSON (usually gzipped). A report only counts when it's about one of
 // your domains (or a subdomain of one); anything else is dropped. Nothing is ever bounced or replied to.
 
+import { brandOf } from "./brand.ts";
+import { sendHooks } from "./hooks.ts";
 import PostalMime from "postal-mime";
 import { MAX_FILE, parseReport, ReportError, unpackReport } from "./dmarc-core.ts";
 import { parseTlsReport, TLS_REPORTS_PER_DAY, TlsReportError, unpackTls, type TlsReport } from "./tls-reports-core.ts";
@@ -38,6 +40,8 @@ async function saveTls(db: D1Database, domain: string, r: TlsReport): Promise<bo
 /** Reads one email and keeps the reports in it. Returns how many DMARC and TLS reports were saved. */
 export async function takeMail(db: D1Database, raw: ArrayBuffer | Uint8Array, resolve: Resolve): Promise<{ dmarc: number; tls: number }> {
 	const saved = { dmarc: 0, tls: 0 };
+	// Each report saved, for webhooks (report.received). Sent once the email is done.
+	const events: Record<string, unknown>[] = [];
 	if (raw.byteLength > MAX_FILE * 1.4) return saved;
 	let mail;
 	try {
@@ -74,7 +78,12 @@ export async function takeMail(db: D1Database, raw: ArrayBuffer | Uint8Array, re
 				dmarcDone = true;
 				const domain = ownerDomain(report.policy.domain, domains);
 				if (!domain || !(await room("reports", domain, MAIL_REPORTS_PER_DAY))) continue;
-				if (await saveReport(db, domain, report, "mail", null, resolve)) saved.dmarc++;
+				if (await saveReport(db, domain, report, "mail", null, resolve)) {
+					saved.dmarc++;
+					const messages = report.rows.reduce((n, r) => n + r.count, 0);
+					const passed = report.rows.reduce((n, r) => n + (r.dkim === "pass" || r.spf === "pass" ? r.count : 0), 0);
+					events.push({ kind: "dmarc", domain, org: report.org, reportId: report.reportId, begin: report.begin || null, end: report.end || null, messages, passed });
+				}
 			} catch (e) {
 				if (!(e instanceof ReportError)) console.error("dmarc report", e);
 			}
@@ -84,11 +93,19 @@ export async function takeMail(db: D1Database, raw: ArrayBuffer | Uint8Array, re
 			const report = parseTlsReport(await unpackTls(bytes));
 			const domain = ownerDomain(report.domain, domains);
 			if (!domain || !(await room("tls_reports", domain, TLS_REPORTS_PER_DAY))) continue;
-			if (await saveTls(db, domain, report)) saved.tls++;
+			if (await saveTls(db, domain, report)) {
+				saved.tls++;
+				events.push({ kind: "tls", domain, org: report.org, reportId: report.reportId, begin: report.begin, end: report.end,
+					success: report.policies.reduce((n, p) => n + p.success, 0), failure: report.policies.reduce((n, p) => n + p.failure, 0) });
+			}
 		} catch (e) {
 			if (!(e instanceof TlsReportError)) console.error("tls report", e);
 		}
 	}
 	if (saved.dmarc || saved.tls) await setSetting(db, "last_report_at", isoNow());
+	if (events.length) {
+		const app = (await brandOf(db)).name;
+		for (const e of events) await sendHooks(db, "report.received", e, app).catch((err) => console.error("webhook", err));
+	}
 	return saved;
 }

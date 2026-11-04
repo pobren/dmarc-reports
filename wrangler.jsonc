@@ -7,7 +7,7 @@
 	// The app keeps everything in this database. It makes its own tables the first time it runs.
 	"d1_databases": [{ "binding": "DB", "database_name": "dmarc-reports" }],
 	// The web pages. Only /api/ goes to the Worker; everything else is served as it is.
-	"assets": { "directory": "public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+	"assets": { "directory": "public", "binding": "ASSETS", "run_worker_first": ["/api/*", "/mcp", "/register", "/token", "/authorize", "/.well-known/oauth-*"] },
 	// Alert and summary emails, to an address you've verified under Email Routing › Destination addresses.
 	"send_email": [{ "name": "EMAIL" }],
 	// The daily look at each domain: a few domains every 30 minutes.

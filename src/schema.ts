@@ -130,4 +130,53 @@ CREATE UNIQUE INDEX IF NOT EXISTS tls_reports_once ON tls_reports (domain, org, 
 CREATE INDEX IF NOT EXISTS tls_reports_domain ON tls_reports (domain, end_at);
 CREATE INDEX IF NOT EXISTS tls_reports_at ON tls_reports (created_at);
 `,
+`-- 1.2.0: API keys, webhooks and the AI connector's sign-in. Keys, codes and tokens are kept as SHA-256 hashes.
+
+-- Keys for the API (src/v1.ts) and the AI connector. can_change 1: may add domains and mark senders.
+CREATE TABLE IF NOT EXISTS api_keys (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	key_hash TEXT NOT NULL UNIQUE,
+	hint TEXT NOT NULL,
+	can_change INTEGER NOT NULL DEFAULT 0,
+	created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+	last_used TEXT,
+	window_start INTEGER NOT NULL DEFAULT 0,
+	window_count INTEGER NOT NULL DEFAULT 0
+);
+
+-- Your own webhooks (src/hooks.ts): told about new reports and alerts, signed with their own secret.
+CREATE TABLE IF NOT EXISTS webhooks (
+	id TEXT PRIMARY KEY,
+	url TEXT NOT NULL,
+	secret TEXT NOT NULL,
+	on_off INTEGER NOT NULL DEFAULT 1,
+	fails INTEGER NOT NULL DEFAULT 0,
+	last_status TEXT,
+	created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+-- The AI connector's OAuth sign-in (src/oauth.ts): apps that registered, one-time codes and tokens.
+CREATE TABLE IF NOT EXISTS oauth_clients (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	redirect_uris TEXT NOT NULL,
+	created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS oauth_codes (
+	code_hash TEXT PRIMARY KEY,
+	client_id TEXT NOT NULL,
+	account_id TEXT NOT NULL,
+	redirect_uri TEXT NOT NULL,
+	challenge TEXT NOT NULL,
+	expires INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+	token_hash TEXT PRIMARY KEY,
+	kind TEXT NOT NULL,
+	client_id TEXT NOT NULL,
+	account_id TEXT NOT NULL,
+	expires INTEGER NOT NULL
+);
+`,
 ];

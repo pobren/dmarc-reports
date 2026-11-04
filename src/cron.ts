@@ -8,6 +8,7 @@ import { domainAnalysis, KEEP_DAYS, refreshRecord, tlsRows, type DomainRow } fro
 import type { Resolve } from "./dns.ts";
 import type { Send } from "./send.ts";
 import { brandOf } from "./brand.ts";
+import { ALERT_TYPE, sendHooks } from "./hooks.ts";
 
 /** Domains looked at in one run, and how long a run may take. */
 const PER_RUN = 15;
@@ -60,6 +61,7 @@ export async function runCron(env: Env, resolve: Resolve, send: Send | null, ori
 				state.tlsAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 			}
 			if (send) for (const a of due) await send(named(a).subject, named(a).text);
+			for (const a of due) await sendHooks(db, ALERT_TYPE[a.kind], { domain: row.domain, subject: named(a).subject, text: named(a).text, link }, brand.name).catch((e) => console.error("webhook", e));
 			await db.prepare("UPDATE domains SET alert_state = ? WHERE domain = ?").bind(JSON.stringify(state), row.domain).run();
 			if (send && row.weekly && (!row.summary_at || Date.parse(row.summary_at) < Date.now() - 6.5 * 86_400_000)) {
 				const week = await domainAnalysis(db, row.domain, 7);

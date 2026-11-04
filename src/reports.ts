@@ -41,7 +41,7 @@ export function cleanDmarcDomain(input: unknown): string | null {
 	return d ? d.replace(/^www\./, "") : null;
 }
 
-const periodOf = (v: unknown) => (PERIODS.includes(Number(v)) ? Number(v) : 30);
+export const periodOf = (v: unknown) => (PERIODS.includes(Number(v)) ? Number(v) : 30);
 
 // --- Keeping reports ------------------------------------------------------------------------------
 

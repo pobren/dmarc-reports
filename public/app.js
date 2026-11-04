@@ -51,6 +51,10 @@
     open: `<path d="M11 3.5h5.5V9M16.5 3.5 9 11"/><path d="M14 11.5V16a.5.5 0 0 1-.5.5h-9A.5.5 0 0 1 4 16V7a.5.5 0 0 1 .5-.5H9"/>`,
     image: `<rect x="3" y="4" width="14" height="12" rx="2"/><circle cx="7.5" cy="8.5" r="1.5"/><path d="m4 15 4.5-4.5L12 14l2-2 3 3"/>`,
     more: `<path d="M5 8l5 5 5-5"/>`,
+    code: `<path d="M7 6 3 10l4 4M13 6l4 4-4 4"/>`,
+    send: `<path d="M17 3 9 11M17 3l-5 14-3-6-6-3z"/>`,
+    pause: `<path d="M7 4.5v11M13 4.5v11"/>`,
+    x: `<path d="M5 5l10 10M15 5 5 15"/>`,
   };
   const icon = (name) => `<svg viewBox="0 0 20 20" ${P} aria-hidden="true">${ICONS[name] || ""}</svg>`;
   /** A button with an icon. */
@@ -128,6 +132,9 @@
     me = m.body;
     if (q.get("setup") || !me.setUp) return setupPage(q.get("setup") || "");
     if (!me.signedIn) return signInPage();
+    // Signing in for the AI connector (Claude and other apps): back to the Allow page.
+    const next = q.get("next") || "";
+    if (next.startsWith("/authorize?")) { location.href = next; return; }
     nav.hidden = false;
     route();
   }
@@ -725,9 +732,53 @@
       say(msg3, "Your password is changed.");
     });
 
-    show(where, brandForm, pwForm, el("section", { class: "panel" }, el("h2", {}, "About"),
+    show(where, await developerPanel(), brandForm, pwForm, el("section", { class: "panel" }, el("h2", {}, "About"),
       el("p", {}, `Version ${s.version}. `, el("a", { href: "https://github.com/pobren/dmarc-reports/releases", target: "_blank", rel: "noopener" }, "What's new"), " · ",
         el("a", { href: "https://github.com/pobren/dmarc-reports/blob/main/LICENSE", target: "_blank", rel: "noopener" }, "Licence"))));
+  }
+
+  // --- API keys, webhooks and the AI connector ---------------------------------------------------------
+
+  async function developerPanel(newKey) {
+    const box = el("section", { class: "panel", id: "developer" });
+    const r = await api("GET", "/api/developer");
+    if (!r.ok) return box.replaceChildren(el("p", { class: "err" }, r.body.error || "This part couldn't be loaded.")), box;
+    draw(r.body, newKey);
+    function draw(d, fresh) {
+      const err = el("p", { class: "err", role: "alert", hidden: true });
+      const okNote = el("p", { class: "ok-note", role: "status", hidden: true });
+      const redraw = (x, note) => { if (!x.ok) return say(err, x.body.error || "Something went wrong. Please try again."); draw(x.body, x.body.newKey); if (note) say(box.querySelector(".ok-note"), note); };
+      const kname = el("input", { type: "text", placeholder: "Zapier, Monthly report…", maxlength: "60" });
+      const change = el("input", { type: "checkbox" });
+      const hookUrl = el("input", { type: "url", placeholder: "https://", inputmode: "url" });
+      box.replaceChildren(...[
+        el("h2", {}, "API, webhooks and AI connector"),
+        el("p", {}, "Use your reports in your own scripts and tools, or ask Claude about them. ", el("a", { href: "https://paulobrien.dev/dmarc/api/", target: "_blank", rel: "noopener" }, "How the API works"), "."),
+        el("p", { class: "small" }, "Your API address"), el("div", { class: "addr" }, el("code", {}, d.api), copyBtn(d.api)),
+        fresh ? el("div", { class: "note" }, el("p", {}, el("b", {}, "Copy your new key now. "), "It won't be shown again."), el("div", { class: "addr" }, el("code", {}, fresh), copyBtn(fresh))) : null,
+        el("h3", {}, "API keys"),
+        d.keys.length ? el("div", { class: "scroll" }, el("table", { class: "tbl" }, el("tr", {}, el("th", {}, "Key"), el("th", {}, "Can"), el("th", {}, "Last used"), el("th", {}, "")),
+          d.keys.map((k) => el("tr", {}, el("td", {}, el("b", {}, k.name), el("br"), el("code", { class: "small" }, `${k.hint}…`)), el("td", {}, k.change ? "Read and change" : "Read only"), el("td", {}, k.lastUsed ? day(k.lastUsed) : "Never"),
+            el("td", {}, btn("trash", "Delete", { class: "btn danger small", onclick: async () => { if (confirm("Delete this key? Anything using it stops working straight away.")) redraw(await api("DELETE", `/api/keys/${k.id}`), "Key deleted."); } })))))) : el("p", { class: "small" }, "No keys yet."),
+        el("label", { class: "field" }, "Name for a new key", kname),
+        el("label", { class: "field tick" }, change, " It can change things (add domains, mark senders Mine or Not mine)"),
+        el("div", { class: "acts" }, btn("key", "Make a key", { onclick: async () => redraw(await api("POST", "/api/keys", { name: kname.value, change: change.checked }), "Key made.") })),
+        el("h3", {}, "Webhooks"),
+        el("p", { class: "small" }, "We post to your address when a report arrives and when an alert is due (new sender, your mail failing, reports stopped, encryption failing). Each post is signed with the webhook's secret."),
+        d.webhooks.length ? el("div", { class: "scroll" }, el("table", { class: "tbl" }, el("tr", {}, el("th", {}, "Address"), el("th", {}, "Last answer")),
+          d.webhooks.map((h) => el("tr", {}, el("td", {}, el("b", {}, h.where), h.on ? null : el("span", { class: "small" }, ` (switched off after ${h.fails} failed posts)`), el("br"), el("span", { class: "small" }, "Signing secret: "), el("code", { class: "small" }, h.secret),
+              el("div", { class: "acts" }, btn("send", "Test", { class: "btn quiet small", onclick: async () => redraw(await api("POST", `/api/webhooks/${h.id}/test`), "Test sent. Your address answered.") }),
+              btn("trash", "Remove", { class: "btn danger small", onclick: async () => redraw(await api("DELETE", `/api/webhooks/${h.id}`), "Webhook removed.") }))),
+            el("td", { class: "small" }, h.lastStatus || "Not used yet"))))) : el("p", { class: "small" }, "No webhooks yet."),
+        el("label", { class: "field" }, "Webhook address", hookUrl),
+        el("div", { class: "acts" }, btn("plus", "Add webhook", { onclick: async () => redraw(await api("POST", "/api/webhooks", { url: hookUrl.value.trim() }), "Webhook added. Send it a test.") })),
+        el("h3", {}, "AI connector"),
+        el("p", {}, "In Claude, open Settings, then Connectors, then Add custom connector, and paste this address. Claude asks you to sign in here once. It can only read."),
+        el("div", { class: "addr" }, el("code", {}, d.connector.address), copyBtn(d.connector.address)),
+        d.connector.linked ? el("div", { class: "acts" }, btn("x", "Disconnect AI apps", { class: "btn quiet", onclick: async () => redraw(await api("POST", "/api/connector/disconnect"), "Disconnected.") })) : el("p", { class: "small" }, "Nothing connected yet."),
+        okNote, err].filter(Boolean));
+    }
+    return box;
   }
 
   // --- A shared link ---------------------------------------------------------------------------------

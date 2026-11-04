@@ -214,7 +214,7 @@ export function metadata(manifest: Manifest, databaseId: string, assetsJwt: stri
 			{ type: "plain_text", name: "APP_VERSION", text: manifest.version },
 		],
 		keep_bindings: ["secret_text"],
-		assets: { jwt: assetsJwt, config: { run_worker_first: ["/api/*"], ...(manifest.headers ? { _headers: manifest.headers } : {}) } },
+		assets: { jwt: assetsJwt, config: { run_worker_first: ["/api/*", "/mcp", "/register", "/token", "/authorize", "/.well-known/oauth-*"], ...(manifest.headers ? { _headers: manifest.headers } : {}) } },
 		observability: { enabled: true },
 	};
 }

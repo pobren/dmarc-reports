@@ -45,6 +45,6 @@ test("worker metadata keeps secrets and binds everything", () => {
 	const meta = metadata(m, "db-id", "jwt") as { bindings: { type: string; name: string }[]; keep_bindings: string[]; assets: { config: Record<string, unknown> } };
 	assert.deepEqual(meta.bindings.map((b) => b.name), ["DB", "ASSETS", "EMAIL", "APP_VERSION"]);
 	assert.deepEqual(meta.keep_bindings, ["secret_text"]);
-	assert.deepEqual(meta.assets.config.run_worker_first, ["/api/*"]);
+	assert.deepEqual(meta.assets.config.run_worker_first, ["/api/*", "/mcp", "/register", "/token", "/authorize", "/.well-known/oauth-*"]);
 	assert.equal(meta.assets.config._headers, "/*\n  x: y");
 });
