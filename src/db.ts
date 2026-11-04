@@ -12,10 +12,13 @@ export interface Env {
 	SETUP_TOKEN?: string;
 	/** Which release is running, set by the installer. */
 	APP_VERSION?: string;
+	/** Optional Cloudflare Turnstile on set-up and sign-in (turnstile.ts): both are needed, added as secrets. */
+	TURNSTILE_SITE_KEY?: string;
+	TURNSTILE_SECRET?: string;
 }
 
 export const NOW = "strftime('%Y-%m-%dT%H:%M:%SZ', 'now')";
-export const VERSION = "1.0.1";
+export const VERSION = "1.1.0";
 
 export function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
 	return new Response(JSON.stringify(body), {

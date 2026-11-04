@@ -1,6 +1,6 @@
 {
 	"name": "dmarc-reports",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"private": true,
 	"description": "See who sends email as your domains. DMARC and TLS reports in plain English, on your own Cloudflare account.",
 	"license": "SEE LICENSE IN LICENSE",

@@ -8,6 +8,7 @@
 //   POST /api/password        { current, password }: change it while signed in
 
 import { getSetting, json, setSetting, type Env } from "./db.ts";
+import { ROBOT_ERROR, turnstileKey, turnstileOk } from "./turnstile.ts";
 
 const COOKIE = "dr_session";
 const SESSION_DAYS = 30;
@@ -129,6 +130,7 @@ export async function me(request: Request, env: Env): Promise<Response> {
 		// Set-up can't start until SETUP_TOKEN is your own code.
 		setupLocked: !token || token.length < 16 || EXAMPLE_CODES.has(token),
 		version: env.APP_VERSION || undefined,
+		turnstile: turnstileKey(env),
 	});
 }
 
@@ -140,6 +142,7 @@ export async function setup(request: Request, env: Env): Promise<Response> {
 	const b = await body(request);
 	const who = await placeOf(request);
 	if (await tooManyTries(env.DB, who)) return json({ error: "Too many tries. Please wait 15 minutes and try again." }, 429);
+	if (!(await turnstileOk(env, request, b.ts))) return json({ error: ROBOT_ERROR }, 403);
 	const works = await codeWorks(env, b.code);
 	if (works === "locked") return json({ error: "Set-up is locked. Give the SETUP_TOKEN secret your own long code (16 characters or more) first: the README shows how." }, 403);
 	if (works === "wrong") {
@@ -169,6 +172,7 @@ export async function signIn(request: Request, env: Env): Promise<Response> {
 	const b = await body(request);
 	const who = await placeOf(request);
 	if (await tooManyTries(env.DB, who)) return json({ error: "Too many wrong passwords. Please wait 15 minutes and try again." }, 429);
+	if (!(await turnstileOk(env, request, b.ts))) return json({ error: ROBOT_ERROR }, 403);
 	const stored = await getSetting(env.DB, "password");
 	if (!stored) return json({ error: "DMARC Reports isn't set up yet. Open the set-up link first." }, 409);
 	const ok = typeof b.password === "string" && b.password.length <= 200 && (await checkPassword(b.password, stored));

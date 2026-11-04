@@ -1,5 +1,9 @@
 # Changes
 
+## 1.1.0: Optional robot check
+
+- Set-up and sign-in can now use Cloudflare Turnstile. It's off until you add your own widget's keys to the Worker (see Robot check in the README).
+
 ## 1.0.1: Releases straight from GitHub
 
 - New versions now go to npm straight from GitHub, with a signature you can check on npm. Nothing changes in the app.

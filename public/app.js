@@ -132,6 +132,37 @@
     route();
   }
 
+  // Cloudflare Turnstile under set-up and sign-in, when the owner has switched it on (/api/me gives the site key).
+  // Cloudflare's script loads only on those pages. Most people see nothing; a few are asked to tick a box.
+  let tsApi = null;
+  function tsLoad() {
+    return tsApi || (tsApi = new Promise((ok, bad) => {
+      window.drTsReady = () => ok(window.turnstile);
+      const s = document.createElement("script");
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=drTsReady";
+      s.async = true;
+      s.onerror = () => { tsApi = null; bad(new Error("load")); };
+      document.head.append(s);
+    }));
+  }
+  /** Adds the widget above a form's buttons. Returns a function that gives a fresh answer ("" if none came). */
+  function robotCheck(form) {
+    const key = me && me.turnstile;
+    if (!key) return async () => undefined;
+    const box = el("div", { class: "ts-box" });
+    form.querySelector(".acts").before(box);
+    let id = null, token = "";
+    const waiting = [];
+    const hand = (v) => waiting.splice(0).forEach((f) => f(v));
+    tsLoad().then((t) => { id = t.render(box, { sitekey: key, appearance: "interaction-only", callback: (v) => { token = v; hand(v); }, "expired-callback": () => { token = ""; }, "error-callback": () => hand("") }); }).catch(() => hand(""));
+    return () => new Promise((ok) => {
+      const give = (v) => { token = ""; if (id !== null) setTimeout(() => window.turnstile.reset(id), 0); ok(v); };
+      if (token) return give(token);
+      const timer = setTimeout(() => give(""), 20000);
+      waiting.push((v) => { clearTimeout(timer); give(v); });
+    });
+  }
+
   function setupPage(code) {
     nav.hidden = true;
     if (me.setupLocked) {
@@ -160,12 +191,13 @@
         el("label", { class: "field" }, "Send alerts to", el("small", {}, "Optional. Must be verified under Email Routing › Destination addresses."), alertTo),
       ],
       el("div", { class: "acts" }, go1), err);
+    const robot = robotCheck(form);
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       say(err, "");
       if (pw.value !== pw2.value) return say(err, "The two passwords don't match.");
       go1.disabled = true;
-      const r = await api("POST", "/api/setup", { code: code || codeIn.value, password: pw.value, reportAddress: rep.value, alertTo: alertTo.value });
+      const r = await api("POST", "/api/setup", { code: code || codeIn.value, password: pw.value, reportAddress: rep.value, alertTo: alertTo.value, ts: await robot() });
       go1.disabled = false;
       if (!r.ok) return say(err, r.body.error || "Something went wrong. Please try again.");
       history.replaceState(null, "", location.pathname);
@@ -182,10 +214,11 @@
     const b = btn("in", "Sign in", { type: "submit" });
     const form = el("form", { class: "panel narrow" }, el("h1", {}, "Sign in"), el("label", { class: "field" }, "Password", pw), el("div", { class: "acts" }, b), err,
       el("p", { class: "small", style: { "margin-top": "16px" } }, "Forgotten it? Give SETUP_TOKEN a new code in Cloudflare (or run the installer again) and open the set-up link."));
+    const robot = robotCheck(form);
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       b.disabled = true;
-      const r = await api("POST", "/api/sign-in", { password: pw.value });
+      const r = await api("POST", "/api/sign-in", { password: pw.value, ts: await robot() });
       b.disabled = false;
       if (!r.ok) { pw.select(); return say(err, r.body.error || "Something went wrong. Please try again."); }
       start();
