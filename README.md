@@ -77,6 +77,15 @@ Add an address under **Settings › Where reports and alerts go**. Cloudflare on
 
 Run `npx @mrpwob/dmarc-reports setup` again for a new set-up link, or give the `SETUP_TOKEN` secret a new code under **Workers & Pages › dmarc-reports › Settings › Variables and Secrets** and open `https://<your app>/?setup=<new code>`. Each code works once.
 
+## Robot check (optional)
+
+Set-up and sign-in can use [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/), Cloudflare's free check that a person is using the form. Most people see nothing; a few are asked to tick a box. Wrong passwords are already limited, so this is an extra layer.
+
+1. In Cloudflare, open **Turnstile** and add a widget. Use your DMARC Reports address as its hostname and choose **Managed**.
+2. Under **Workers & Pages › dmarc-reports › Settings › Variables and Secrets**, add two secrets: `TURNSTILE_SITE_KEY` (the site key) and `TURNSTILE_SECRET` (the secret key). Add both as secrets, so updates keep them.
+
+It switches on once both are there. Remove either one to switch it off.
+
 ## Updating
 
 ```sh
