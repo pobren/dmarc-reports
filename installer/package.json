@@ -1,0 +1,39 @@
+{
+	"name": "@mrpwob/dmarc-reports",
+	"version": "0.0.0",
+	"description": "Install and update DMARC Reports, a free DMARC and TLS report reader, on your own Cloudflare account.",
+	"type": "module",
+	"bin": {
+		"dmarc-reports": "cli.mjs"
+	},
+	"files": [
+		"cli.mjs",
+		"release",
+		"README.md",
+		"LICENSE",
+		"NOTICE"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"keywords": [
+		"dmarc",
+		"tls-rpt",
+		"email",
+		"cloudflare",
+		"workers",
+		"self-hosted"
+	],
+	"homepage": "https://paulobrien.dev/dmarc/",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pobren/dmarc-reports.git"
+	},
+	"bugs": {
+		"url": "https://github.com/pobren/dmarc-reports/issues"
+	},
+	"license": "SEE LICENSE IN LICENSE",
+	"publishConfig": {
+		"access": "public"
+	}
+}

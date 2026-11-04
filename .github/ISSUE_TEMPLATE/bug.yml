@@ -1,0 +1,32 @@
+name: Report a bug
+description: Something in DMARC Reports isn't working as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please don't paste report files, IP addresses or anything private here. This page is public.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: DMARC Reports version
+      description: Shown under Settings › About, such as "1.0.0".
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - The installer (npx @mrpwob/dmarc-reports)
+        - The Deploy to Cloudflare button
+        - From the code
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome on Windows, Safari on iPhone…

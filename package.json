@@ -1,0 +1,47 @@
+{
+	"name": "dmarc-reports",
+	"version": "1.0.0",
+	"private": true,
+	"description": "See who sends email as your domains. DMARC and TLS reports in plain English, on your own Cloudflare account.",
+	"license": "SEE LICENSE IN LICENSE",
+	"type": "module",
+	"homepage": "https://paulobrien.dev/dmarc/",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pobren/dmarc-reports.git"
+	},
+	"bugs": {
+		"url": "https://github.com/pobren/dmarc-reports/issues"
+	},
+	"scripts": {
+		"dev": "wrangler dev",
+		"deploy": "wrangler deploy",
+		"test": "node --experimental-strip-types --test test/*.test.ts installer/test/*.test.ts",
+		"typecheck": "tsc --noEmit && tsc -p installer --noEmit",
+		"package": "node --experimental-strip-types installer/package.ts",
+		"setup": "node npm/cli.mjs setup",
+		"update": "node npm/cli.mjs update"
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"dependencies": {
+		"postal-mime": "^2.6.1"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20261019.1",
+		"@types/node": "^22.10.0",
+		"esbuild": "^0.25.0",
+		"typescript": "^5.8.3",
+		"wrangler": "^4.154.0"
+	},
+	"cloudflare": {
+		"label": "DMARC Reports",
+		"products": ["Workers", "D1", "Email Routing"],
+		"bindings": {
+			"SETUP_TOKEN": {
+				"description": "A long secret code you choose, 16 characters or more (replace the example, which won't work). After deploying, open `https://<your app>/?setup=<your code>` to set your password."
+			}
+		}
+	}
+}

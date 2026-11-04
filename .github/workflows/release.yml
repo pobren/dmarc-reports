@@ -1,0 +1,50 @@
+# Publishes a release: makes the npm installer (@mrpwob/dmarc-reports) with the app inside, publishes it to npm
+# and adds a GitHub release with the notes from CHANGELOG.md. Uses npm trusted publishing (set up on npmjs.com
+# for release.yml), so it needs no npm token.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  # Or run it from the Actions tab: it tags the version in package.json itself.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - name: Check the tag matches package.json
+        id: v
+        run: |
+          version=$(jq -r '.version' package.json)
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "The tag ${GITHUB_REF_NAME} doesn't match the version in package.json (${version})." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          awk -v v="## ${version}:" 'index($0, v) == 1 { on = 1; next } /^## / { on = 0 } on' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          echo "title=$(grep -m1 "^## ${version}:" CHANGELOG.md | sed 's/^## [^:]*: //')" >> "$GITHUB_OUTPUT"
+      - run: npm run package
+      - name: Publish to npm
+        working-directory: npm
+        run: npm install -g npm@11 && npm publish --provenance --access public
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.v.outputs.tag }}" --target "$GITHUB_SHA" --title "DMARC Reports ${{ steps.v.outputs.version }}: ${{ steps.v.outputs.title }}" --notes-file "$RUNNER_TEMP/notes.md"

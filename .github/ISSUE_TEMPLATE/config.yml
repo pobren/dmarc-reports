@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the set-up guide
+    url: https://github.com/pobren/dmarc-reports#readme
+    about: Step by step install and set-up instructions.
+  - name: Using it for clients or a commercial licence
+    url: https://paulobrien.dev/contact/
+    about: Agencies, hosts and anyone offering it to clients. Talk to us.
