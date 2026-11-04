@@ -42,9 +42,7 @@ jobs:
       - run: npm run package
       - name: Publish to npm
         working-directory: npm
-        # Trusted publishing once it's set up on npmjs.com. Until then (the very first release), an NPM_TOKEN secret.
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # npm trusted publishing (set up on npmjs.com for release.yml), so no token is needed.
         run: npm install -g npm@11 && npm publish --provenance --access public
       - name: GitHub release
         env:
