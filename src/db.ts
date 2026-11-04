@@ -15,7 +15,7 @@ export interface Env {
 }
 
 export const NOW = "strftime('%Y-%m-%dT%H:%M:%SZ', 'now')";
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 
 export function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
 	return new Response(JSON.stringify(body), {
