@@ -76,7 +76,7 @@ input[type=color] { display: block; }
 /* Forms */
 label.field { display: block; margin: 0 0 14px; font-weight: 600; }
 label.field small { display: block; font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
-input[type=text], input[type=email], input[type=password], input[type=search], select { font: inherit; width: 100%; margin-top: 6px; padding: 11px 13px; border: 1px solid var(--line-2); border-radius: 11px; background: var(--sheet); color: var(--ink); }
+input[type=text], input[type=email], input[type=password], input[type=search], input[type=url], select { font: inherit; width: 100%; margin-top: 6px; padding: 11px 13px; border: 1px solid var(--line-2); border-radius: 11px; background: var(--sheet); color: var(--ink); }
 input[type=color] { width: 56px; height: 42px; padding: 2px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--sheet); margin-top: 6px; }
 input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 45%, transparent); outline-offset: 2px; }
 .row-form { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -205,3 +205,9 @@ table.tbl .n { text-align: right; font-variant-numeric: tabular-nums; }
 .foot { color: var(--ink-faint); font-size: .88rem; text-align: center; padding: 0 16px 30px; }
 .foot a { color: inherit; }
 @media print { .top, .nav, .acts, .periods, .labels, .foot, .back, .no-print { display: none !important; } body { background: #fff; } .panel { box-shadow: none; } }
+
+/* Settings › API, webhooks and AI connector */
+label.tick { display: flex; gap: 10px; align-items: center; font-weight: 500; }
+#developer h3 { margin: 22px 0 8px; }
+#developer .tbl code { word-break: break-all; }
+#developer .tbl .acts { margin-top: 10px; }

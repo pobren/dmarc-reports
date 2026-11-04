@@ -73,6 +73,14 @@ Reports usually start arriving within a day or two.
 
 Add an address under **Settings › Where reports and alerts go**. Cloudflare only sends to addresses you've verified, so add it first under **Email › Email Routing › Destination addresses**, then press **Send a test email** in the app.
 
+## API, webhooks and AI connector
+
+Everything is under **Settings › API, webhooks and AI connector**. The full guide is at [paulobrien.dev/dmarc/api](https://paulobrien.dev/dmarc/api/).
+
+- **API.** Make a key (it starts `dmarc_` and is shown once), then send it as `Authorization: Bearer dmarc_...` to `https://<your app>/api/v1`. Keys are read only unless you tick "It can change things". Up to 60 requests a minute per key.
+- **Webhooks.** Add an https address and we post signed JSON to it when a report arrives (`report.received`) and when an alert is due (`sender.new`, `sender.failing`, `reports.stopped`, `tls.failing`). Check the `DMARC-Reports-Signature` header: `t=<time>,v1=<HMAC-SHA256 of "<time>.<body>" with your signing secret>`.
+- **AI connector.** In Claude, add a custom connector with `https://<your app>/mcp` and sign in once. It can only read.
+
 ## Forgotten your password?
 
 Run `npx @mrpwob/dmarc-reports setup` again for a new set-up link, or give the `SETUP_TOKEN` secret a new code under **Workers & Pages › dmarc-reports › Settings › Variables and Secrets** and open `https://<your app>/?setup=<new code>`. Each code works once.
