@@ -113,6 +113,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .rec dt { font-weight: 650; color: var(--ink-soft); font-size: .92rem; }
 .rec dd { margin: 0; display: flex; gap: 10px; align-items: center; justify-content: space-between; min-width: 0; }
 .rec dd code { font-size: .95rem; }
+.rec dd.now code { color: var(--ink-soft); }
 .rec dd small { display: block; color: var(--ink-faint); font-size: .82rem; }
 @media (max-width: 560px) { .rec dl { grid-template-columns: minmax(0, 1fr); gap: 2px; } .rec dt { margin-top: 8px; } }
 

@@ -305,11 +305,14 @@
     show(back, ...[overview(d), setup(d), senders(d.analysis, d.domain), plan(d), tlsBox(d), received(d), everyRow(d), domainSettings(d)].filter(Boolean));
   }
 
-  function record(rec) {
+  /** A DNS record to add, or to change (with what's there now, so you can see the difference). */
+  function record(rec, now) {
+    const changing = rec.action === "edit" && now;
     return el("div", { class: "rec" }, el("dl", {},
       el("dt", {}, rec.action === "edit" ? "Change" : "Type"), el("dd", {}, el("code", {}, rec.type)),
       el("dt", {}, "Name"), el("dd", {}, el("span", {}, el("code", {}, rec.name)), copyBtn(rec.name)),
-      el("dt", {}, "Content"), el("dd", {}, el("code", {}, rec.value), copyBtn(rec.value))));
+      changing ? [el("dt", {}, "Now"), el("dd", { class: "now" }, el("code", {}, now))] : null,
+      el("dt", {}, changing ? "Change to" : "Content"), el("dd", {}, el("code", {}, rec.value), copyBtn(rec.value))));
   }
 
   function recheck(d, test) {
@@ -341,7 +344,7 @@
         el("p", {}, d.record ? `${d.domain} has a DMARC record, but its reports don't come here yet. Change it to the content below. Its other settings and report addresses are kept.`
           : `${d.domain} has no DMARC record yet. Add this one: it only watches, nothing is blocked, and it sends the reports here.`),
         el("ol", { class: "steps" }, d.setup.steps.map((s) => el("li", {}, s))),
-        record(d.setup.record),
+        record(d.setup.record, d.record),
         d.setup.host && d.setup.host.panel ? el("p", {}, el("a", { class: "btn quiet small", href: d.setup.host.panel, target: "_blank", rel: "noopener", html: icon("open") }, el("span", {}, `Open ${d.setup.host.name}`))) : null,
         recheck(d, (x) => x.hasUs));
     }
@@ -453,7 +456,7 @@
       el("span", { class: "lvl" }, `Level ${i + 1} · ${s.tech}`),
       el("h4", {}, s.title, STATE[s.state] ? el("small", {}, STATE[s.state]) : null, s.date && s.state !== "done" ? el("time", { datetime: s.date }, s.state === "now" ? `since ${day(s.date)}` : `from ${day(s.date)}`) : null),
       el("p", {}, s.what),
-      s.state === "next" && r.current >= 0 ? record({ type: "TXT", name: d.setup ? d.setup.record.name : "_dmarc", value: s.record, action: "edit" }) : null)));
+      s.state === "next" && r.current >= 0 ? record({ type: "TXT", name: d.setup ? d.setup.record.name : "_dmarc", value: s.record, action: "edit" }, d.record) : null)));
     const status = r.current < 0 ? null
       : r.current === 4 ? el("div", { class: "ready" }, "You're at the last step. Mail that fails DMARC is refused, so set up any new service in your DNS before it sends.")
       : r.ready ? el("div", { class: "ready" }, el("b", {}, "Ready for the next step. "), "Everything that sends as you has passed for two weeks. Change your DMARC record to the content under Next.")
@@ -477,7 +480,7 @@
       const t = r.body, s = t.summary;
       body.replaceChildren(...[
         el("p", {}, "Mail servers that support TLS reporting (Google, Microsoft and others) send a daily report saying whether email to you arrived encrypted."),
-        t.setup ? [el("p", {}, t.record ? "Add your report address to this record:" : "Add this record to get TLS reports:"), record(t.setup)] :
+        t.setup ? [el("p", {}, t.record ? "Add your report address to this record:" : "Add this record to get TLS reports:"), record(t.setup, t.record)] :
           el("p", { class: "ok-note" }, "✓ Your TLS reporting record sends reports here."),
         s.reports ? el("div", { class: "overview" }, ring(s.rate, "encrypted", s.rate >= 99 ? "passc" : s.rate >= 90 ? "warnc" : "failc"),
           el("div", {}, el("p", {}, `${plural(s.success + s.failure, "connection")} from ${s.reporters.map((x) => x.org).join(", ")}.`),
