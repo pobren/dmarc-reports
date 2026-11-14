@@ -1,5 +1,10 @@
 # Changes
 
+## 1.2.1: Add domain fixed
+
+- Adding a domain said every domain was invalid, such as example.co.uk. It works again.
+- The same problem stopped uploads, Mine and Not mine, domain settings and share links from saving. They work again too.
+
 ## 1.2.0: API, webhooks and AI connector
 
 - A public API at /api/v1 with your own keys, read only or able to change things. Guide at paulobrien.dev/dmarc/api.

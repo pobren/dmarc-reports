@@ -65,9 +65,12 @@ async function developer(request: Request, env: Env, path: string): Promise<Resp
 	const origin = new URL(request.url).origin;
 	const state = async (extra: Record<string, unknown> = {}) =>
 		json({ keys: await listKeys(db), webhooks: await listHooks(db), api: `${origin}/api/v1`, connector: { address: `${origin}/mcp`, linked: await connectorLinked(db, "owner", Date.now()) }, ...extra });
-	const b = m === "POST" ? await request.json<Record<string, unknown>>().catch(() => ({}) as Record<string, unknown>) : {};
+	// Read the body only for this section's own routes: reading it here for every POST left
+	// nothing for the routes after this one (Add domain said every domain was invalid).
+	const body = () => request.json<Record<string, unknown>>().catch(() => ({}) as Record<string, unknown>);
 	if (path === "/api/developer" && m === "GET") return state();
 	if (path === "/api/keys" && m === "POST") {
+		const b = await body();
 		const made = await makeKey(db, b.name, b.change === true);
 		return "error" in made ? json({ error: made.error }, 400) : state({ newKey: made.key });
 	}
@@ -77,7 +80,7 @@ async function developer(request: Request, env: Env, path: string): Promise<Resp
 		return state();
 	}
 	if (path === "/api/webhooks" && m === "POST") {
-		const r = await addHook(db, b.url);
+		const r = await addHook(db, (await body()).url);
 		return "error" in r ? json({ error: r.error }, 400) : state();
 	}
 	const hook = /^\/api\/webhooks\/([0-9a-f]{16})(\/test)?$/.exec(path);

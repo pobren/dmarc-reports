@@ -115,3 +115,21 @@ test("branding: your own name, colour, logo and support address", async () => {
 	await set({ name: null, colour: null, logo: null, support: null });
 	assert.equal((await brandOf(db)).custom, false);
 });
+
+test("adding a domain through the app works (the body reaches the domains route)", async () => {
+	// The app imports cloudflare:email, which only exists on Cloudflare; stand in for it here.
+	const { register } = await import("node:module");
+	const loader = `export async function resolve(s, c, next) { return s === "cloudflare:email" ? { url: "data:text/javascript,export class EmailMessage {}", shortCircuit: true } : next(s, c); }`;
+	register(`data:text/javascript,${encodeURIComponent(loader)}`);
+	const { default: worker } = await import("../src/index.ts");
+	const { db } = fakeD1();
+	const env = { DB: db, SETUP_TOKEN: "my-own-code-1234567890", ASSETS: { fetch: async () => new Response("") } } as unknown as Env;
+	const made = await worker.fetch(post("/api/setup", { code: "my-own-code-1234567890", password: "abcdefghijk" }), env);
+	assert.equal(made.status, 200);
+	const cookie = cookieFrom(made);
+	const add = await worker.fetch(post("/api/domains", { domain: "paulobrien.com" }, { cookie }), env);
+	assert.equal(add.status, 200);
+	assert.deepEqual(await add.json(), { domain: "paulobrien.com" });
+	const bad = await worker.fetch(post("/api/domains", { domain: "not a domain" }, { cookie }), env);
+	assert.equal(bad.status, 400);
+});
